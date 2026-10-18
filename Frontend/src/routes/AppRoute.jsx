@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 
 import { useCurrentUser } from "../features/auth/hook/useAuth";
 
@@ -24,17 +24,15 @@ import ProductDetailPage from "../features/product/ui/pages/ProductDetailPage";
 const router = createBrowserRouter([
   // Public routes (login, register)
   {
-    path: "/",
-    element: <PublicRoute />,
+    path: "",
+    element: <AuthLayout />,
     children: [
       {
-        path: "",
-        element: <AuthLayout />,
-        children: [
-          { path: "login", element: <LoginPage /> },
-          { path: "register", element: <RegisterPage /> },
-        ],
+        index: true,
+        element: <Navigate to="/login" replace />,
       },
+      { path: "login", element: <LoginPage /> },
+      { path: "register", element: <RegisterPage /> },
     ],
   },
 
