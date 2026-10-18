@@ -1,37 +1,25 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:3000/api";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
 });
 
-
-const SKIP_REFRESH_URLS = [
-  "/auth/login",
-  "/auth/register",
-  "/auth/refresh",
-];
-
+const SKIP_REFRESH_URLS = ["/auth/login", "/auth/register", "/auth/refresh"];
 
 let refreshPromise = null;
 
 const refreshAccessToken = () => {
   if (!refreshPromise) {
     refreshPromise = axios
-      .post(
-        `${BASE_URL}/auth/refresh`,
-        {},
-        { withCredentials: true }
-      )
+      .post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true })
       .then((response) => {
         const accessToken = response.data?.data?.accessToken;
 
         if (!accessToken) {
-          throw new Error(
-            "Access token is missing from the refresh response."
-          );
+          throw new Error("Access token is missing from the refresh response.");
         }
 
         localStorage.setItem("accessToken", accessToken);
@@ -54,7 +42,6 @@ const forceLogout = () => {
   }
 };
 
-
 api.interceptors.request.use(
   (config) => {
     const accessToken = localStorage.getItem("accessToken");
@@ -66,7 +53,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 api.interceptors.response.use(
@@ -82,15 +69,11 @@ api.interceptors.response.use(
 
     const requestUrl = originalRequest.url || "";
 
-    const shouldSkipRefresh = SKIP_REFRESH_URLS.some(
-      (url) => requestUrl.includes(url)
+    const shouldSkipRefresh = SKIP_REFRESH_URLS.some((url) =>
+      requestUrl.includes(url),
     );
 
-    if (
-      !isUnauthorized ||
-      originalRequest._retry ||
-      shouldSkipRefresh
-    ) {
+    if (!isUnauthorized || originalRequest._retry || shouldSkipRefresh) {
       return Promise.reject(error);
     }
 
@@ -114,7 +97,7 @@ api.interceptors.response.use(
     originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
     return api(originalRequest);
-  }
+  },
 );
 
 export default api;
