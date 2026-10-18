@@ -1,12 +1,14 @@
-
-import React from "react";
-import { useSelector } from "react-redux";
 import { Navigate, Outlet } from "react-router";
+import { useSelector } from "react-redux";
 
 const PublicRoute = () => {
-  const isAuthenticate = useSelector(
-    (state) => state.auth.isAuthenticate
+  const { isAuthenticate, isCheckingAuth } = useSelector(
+    (state) => state.auth
   );
+
+  if (isCheckingAuth) {
+    return <div>Loading...</div>;
+  }
 
   if (isAuthenticate) {
     return <Navigate to="/home" replace />;
@@ -16,4 +18,3 @@ const PublicRoute = () => {
 };
 
 export default PublicRoute;
-
