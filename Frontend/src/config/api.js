@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "https://reva-ecom.onrender.com/api";
+const BASE_URL = "[https://reva-ecom.onrender.com/api](https://reva-ecom.onrender.com/api)";
 
 const api = axios.create({
   baseURL: BASE_URL,
