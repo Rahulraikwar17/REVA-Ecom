@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 
 import { getUserApi, loginApi, logOutApi, registerApi } from "../api/auth.api";
 import { logOut, setCredentials } from "../state/AuthSlice";
-
+import { toast } from "react-toastify";
 
 const useAuth = () => {
   const dispatch = useDispatch();
@@ -19,7 +19,11 @@ const useAuth = () => {
 
       localStorage.setItem("accessToken", accessToken);
       dispatch(setCredentials({ user, accessToken }));
+      toast.success("Account created successfully");
       navigate("/home");
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || "Registration failed");
     },
   });
 
@@ -30,7 +34,11 @@ const useAuth = () => {
 
       localStorage.setItem("accessToken", accessToken);
       dispatch(setCredentials({ user, accessToken }));
+      toast.success("Logged in successfully");
       navigate("/home");
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || "Login failed");
     },
   });
 
@@ -39,8 +47,12 @@ const useAuth = () => {
     onSuccess: () => {
       localStorage.removeItem("accessToken");
       dispatch(logOut());
-      queryClient.clear(); 
+      queryClient.clear();
+      toast.success("Logged out successfully");
       navigate("/login");
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || "Logout failed");
     },
   });
 
@@ -58,7 +70,6 @@ const useAuth = () => {
     logOutError: logOutMutation.error,
   };
 };
-
 
 export const useCurrentUser = () => {
   const dispatch = useDispatch();
