@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet } from "react-router";
+import { Outlet, ScrollRestoration } from "react-router";
 import Navbar from "../../shared/ui/components/Navbar";
 import Footer from "../../shared/ui/components/Footer";
 
@@ -9,6 +9,7 @@ const MainLayout = () => {
       <Navbar />
       <Outlet />
       <Footer />
+      <ScrollRestoration />
     </div>
   );
 };
