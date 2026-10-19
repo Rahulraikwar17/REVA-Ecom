@@ -28,7 +28,7 @@ const RegisterPage = () => {
   const password = watch("password");
 
   const onSubmit = (data) => {
-    registerUser(data);
+    registerUser({ ...data, email: data.email.trim().toLowerCase() });
   };
 
   return (
@@ -73,6 +73,10 @@ const RegisterPage = () => {
             icon={Mail}
             type="email"
             placeholder="you@example.com"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             error={errors.email}
             {...register("email", { required: "Email is required" })}
           />

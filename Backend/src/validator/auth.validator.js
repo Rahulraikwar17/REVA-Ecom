@@ -1,77 +1,71 @@
 import { body, validationResult } from "express-validator";
 
+const handleValidation = (req, res, next) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      message: "Validation failed",
+      errors: errors.array(),
+    });
+  }
+
+  next();
+};
+
+const emailRule = body("email")
+  .exists()
+  .withMessage("Email is required")
+  .bail()
+  .isString()
+  .withMessage("Email must be a string")
+  .bail()
+  .trim()
+  .toLowerCase()
+  .isEmail()
+  .withMessage("Enter a valid email address");
+
 export const registerValidator = [
-  body("email")
-    .trim()
-    .exists()
-    .withMessage("Email is required")
-    .bail()
-    .isEmail()
-    .withMessage("Enter valid email address"),
+  emailRule,
+
   body("name")
     .exists()
-    .withMessage("name is required")
+    .withMessage("Name is required")
     .bail()
     .isString()
-    .withMessage("Name must be string")
+    .withMessage("Name must be a string")
+    .bail()
     .trim()
     .isLength({ min: 2, max: 50 })
-    .withMessage("Name length must be 2 to 50"),
-  body("password")
-    .exists()
-    .withMessage("password is required")
-    .bail()
-    .isString()
-    .withMessage("password must be a string")
-    .trim()
-    .isLength({ min: 6 })
-    .withMessage("password at least 6 charaacter long "),
-  (req, res, next) => {
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        Message: "Invalid request",
-        errors: errors.array(),
-      });
-    }
-
-    next();
-  },
-];
-
-export const loginValidator = [
-  body("email")
-    .exists()
-    .withMessage("Email is required")
-    .bail()
-    .trim()
-    .isString()
-    .withMessage("Email must be a String value")
-    .bail()
-    .isEmail()
-    .withMessage("Enter a valid email address"),
+    .withMessage("Name must be between 2 and 50 characters"),
 
   body("password")
     .exists()
     .withMessage("Password is required")
     .bail()
-    .trim()
     .isString()
-    .withMessage("password must be a string")
+    .withMessage("Password must be a string")
     .bail()
-    .isLength({ min: 6 })
-    .withMessage("password at least 6 charaacter long "),
-  (req, res, next) => {
-    const errors = validationResult(req);
+    .trim()
+    .isLength({ min: 6, max: 72 })
+    .withMessage("Password must be between 6 and 72 characters"),
 
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        Message: "Invalid Data",
-        errors: errors.array(),
-      });
-    }
+  handleValidation,
+];
 
-    next();
-  },
+export const loginValidator = [
+  emailRule,
+
+  body("password")
+    .exists()
+    .withMessage("Password is required")
+    .bail()
+    .isString()
+    .withMessage("Password must be a string")
+    .bail()
+    .trim()
+    .notEmpty()
+    .withMessage("Password is required"),
+
+  handleValidation,
 ];

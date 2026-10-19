@@ -18,7 +18,7 @@ const LoginPage = () => {
   } = useForm();
 
   const onSubmit = (data) => {
-    loginUser(data);
+    loginUser({ ...data, email: data.email.trim().toLowerCase() });
   };
 
   return (
@@ -53,6 +53,10 @@ const LoginPage = () => {
             icon={Mail}
             type="email"
             placeholder="you@example.com"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             error={errors.email}
             {...register("email", { required: "Email is required" })}
           />

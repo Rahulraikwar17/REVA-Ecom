@@ -1,4 +1,4 @@
-import UserModel from "../models/user.model..js";
+import UserModel from "../models/user.model.js";
 import {
   createAccessToken,
   createRefreshToken,
@@ -6,90 +6,120 @@ import {
 } from "../utils/auth.utils.js";
 import bcrypt from "bcrypt";
 
-export const registerController = async (req, res) => {
-  const { email, name, password } = req.body;
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
-  const isUserAlreadyExist = await UserModel.findOne({ email });
+const CLEAR_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+};
 
-  if (isUserAlreadyExist) {
-    return res.status(400).json({
-      message: "User already exist with this email address",
-      errors: [
-        {
-          field: "email",
-          message: "User already exist with this email address",
-        },
-      ],
-    });
-  }
+const toSafeUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+});
 
-  const user = await UserModel.create({
-    name,
-    email,
-    passwordHash: await bcrypt.hash(password, 12),
-  });
+const serverError = (res, error) => {
+  console.error(error);
 
-  const accessToken = createAccessToken({ userId: user._id, role: user.role });
-
-  const refreshToken = createRefreshToken({
-    userId: user._id,
-    role: user.role,
-  });
-
-  res.cookie("refreshToken", refreshToken, { httpOnly: true });
-
-  await UserModel.findByIdAndUpdate(user._id, { refreshToken });
-
-  res.status(201).json({
-    message: "user registered succesfully",
-    data: {
-      user: { email: user.email, name: user.name, id: user._id },
-      accessToken,
-    },
+  return res.status(500).json({
+    message: "Internal server error",
+    error: error.message,
   });
 };
-export const loginController = async (req, res) => {
-  const { email, password } = req.body;
 
-  const user = await UserModel.findOne({ email });
-
-  if (!user) {
-    return res.status(400).json({
-      message: "user does not exist with this email",
-    });
-  }
-
-  const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
-
-  if (!isPasswordValid) {
-    return res.status(400).json({
-      message: "password is incorrect",
-    });
-  }
-
-  const accessToken = createAccessToken({ userId: user._id, role: user.role });
-
-  const refreshToken = createRefreshToken({
-    userId: user._id,
-    role: user.role,
-  });
-
-  res.cookie("refreshToken", refreshToken, { httpOnly: true });
-
-  await UserModel.findByIdAndUpdate(user._id, { refreshToken });
-
-  res.status(200).json({
-    message: "user logged in succesfully",
-    data: {
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+const duplicateEmail = (res) =>
+  res.status(409).json({
+    message: "User already exists with this email address",
+    errors: [
+      {
+        field: "email",
+        message: "User already exists with this email address",
       },
-      accessToken,
-    },
+    ],
   });
+
+export const registerController = async (req, res) => {
+  try {
+    const { email, name, password } = req.body;
+
+    const existingUser = await UserModel.findOne({ email });
+
+    if (existingUser) {
+      return duplicateEmail(res);
+    }
+
+    const user = await UserModel.create({
+      name,
+      email,
+      passwordHash: await bcrypt.hash(password, 12),
+    });
+
+    const tokenPayload = { userId: user._id, role: user.role };
+    const accessToken = createAccessToken(tokenPayload);
+    const refreshToken = createRefreshToken(tokenPayload);
+
+    await UserModel.findByIdAndUpdate(user._id, { refreshToken });
+
+    res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
+
+    return res.status(201).json({
+      message: "User registered successfully",
+      data: {
+        user: toSafeUser(user),
+        accessToken,
+      },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return duplicateEmail(res);
+    }
+
+    return serverError(res, error);
+  }
+};
+
+export const loginController = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await UserModel.findOne({ email });
+
+    const isPasswordValid = user
+      ? await bcrypt.compare(password, user.passwordHash)
+      : false;
+
+    if (!user || !isPasswordValid) {
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
+    }
+
+    const tokenPayload = { userId: user._id, role: user.role };
+    const accessToken = createAccessToken(tokenPayload);
+    const refreshToken = createRefreshToken(tokenPayload);
+
+    await UserModel.findByIdAndUpdate(user._id, { refreshToken });
+
+    res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
+
+    return res.status(200).json({
+      message: "User logged in successfully",
+      data: {
+        user: toSafeUser(user),
+        accessToken,
+      },
+    });
+  } catch (error) {
+    return serverError(res, error);
+  }
 };
 
 export const refreshController = async (req, res) => {
@@ -97,45 +127,43 @@ export const refreshController = async (req, res) => {
 
   if (!refreshToken) {
     return res.status(401).json({
-      message: "refresh Token is required",
+      message: "Refresh token is required",
     });
   }
 
   try {
-    const decode = readRefreshToken(refreshToken);
-
-    const { userId, role } = decode;
+    const { userId } = readRefreshToken(refreshToken);
 
     const user = await UserModel.findById(userId);
 
-    if (refreshToken != user.refreshToken) {
-      await UserModel.findByIdAndUpdate(user._id, {
-        refreshToken: null,
+    if (!user) {
+      return res.status(401).json({
+        message: "Invalid refresh token",
       });
+    }
+
+    if (refreshToken !== user.refreshToken) {
+      await UserModel.findByIdAndUpdate(user._id, { refreshToken: null });
 
       return res.status(401).json({
         message: "Refresh token mismatch",
       });
     }
 
-    const accessToken = createAccessToken({ userId, role });
-    const newRefreshToken = createRefreshToken({ userId, role });
+    const tokenPayload = { userId: user._id, role: user.role };
+    const accessToken = createAccessToken(tokenPayload);
+    const newRefreshToken = createRefreshToken(tokenPayload);
+
     await UserModel.findByIdAndUpdate(user._id, {
       refreshToken: newRefreshToken,
     });
 
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-    });
+    res.cookie("refreshToken", newRefreshToken, REFRESH_COOKIE_OPTIONS);
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Tokens rotated successfully",
       data: {
-        user: {
-          email: user.email,
-          name: user.name,
-          id: user._id,
-        },
+        user: toSafeUser(user),
         accessToken,
       },
     });
@@ -145,34 +173,44 @@ export const refreshController = async (req, res) => {
     });
   }
 };
+
 export const getMeController = async (req, res) => {
-  const { userId, role } = req.user;
+  try {
+    const { userId } = req.user;
 
-  const user = await UserModel.findById(userId);
+    const user = await UserModel.findById(userId);
 
-  res.status(200).json({
-    message: "User data fetch successfully",
-    data: {
-      user: {
-        name: user.name,
-        email: user.email,
-        id: user._id,
-        role: user.role,
+    if (!user) {
+      return res.status(401).json({
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "User data fetched successfully",
+      data: {
+        user: toSafeUser(user),
       },
-    },
-  });
+    });
+  } catch (error) {
+    return serverError(res, error);
+  }
 };
 
 export const logoutController = async (req, res) => {
-  const { userId } = req.user;
+  try {
+    const { userId } = req.user;
 
-  await UserModel.findByIdAndUpdate(userId, {
-    $unset: { refreshToken: 1 },
-  });
+    await UserModel.findByIdAndUpdate(userId, {
+      $unset: { refreshToken: 1 },
+    });
 
-  res.clearCookie("refreshToken");
+    res.clearCookie("refreshToken", CLEAR_COOKIE_OPTIONS);
 
-  return res.status(200).json({
-    message: "Logout successful",
-  });
+    return res.status(200).json({
+      message: "Logout successful",
+    });
+  } catch (error) {
+    return serverError(res, error);
+  }
 };
