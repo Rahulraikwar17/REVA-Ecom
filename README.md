@@ -9,7 +9,7 @@ A full-stack e-commerce app for shoppers and sellers, built with the MERN stack.
 ![Node.js](https://img.shields.io/badge/Node.js-black?style=for-the-badge&logo=nodedotjs&logoColor=5FA04E)
 ![MongoDB](https://img.shields.io/badge/MongoDB-black?style=for-the-badge&logo=mongodb&logoColor=47A248)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-black?style=for-the-badge&logo=tailwindcss&logoColor=06B6D4)
-![React Query](https://img.shields.io/badge/React_Query-0047AB?style=for-the-badge&logo=reactquery&logoColor=white)
+![TanStack Query](https://img.shields.io/badge/TanStack_Query-black?style=for-the-badge&logo=reactquery&logoColor=FF4154)
 
 </div>
 
@@ -56,7 +56,7 @@ REVA is a clothing store where customers browse products, pick a size and manage
 | HTTP | Axios |
 | Backend | Node.js, Express |
 | Database | MongoDB with Mongoose |
-| Auth | JWT access token, role based authorization (`customer`, `seller`) |
+| Auth | JWT access token, role based authorization (`user`, `seller`) |
 | Validation | express-validator |
 | File upload | Multer and ImageKit |
 
@@ -137,7 +137,7 @@ Make sure the Axios base URL in `src/config` points to `http://localhost:3000/ap
 
 ### 4. Create a seller account
 
-Register a normal account, then change its `role` from `customer` to `seller` in the `users` collection. The Seller menu appears after the next login or page refresh. A self serve "Become a seller" flow is on the roadmap.
+Register a normal account, then change its `role` from `user` to `seller` in the `users` collection. The Seller menu appears after the next login or page refresh. A self serve "Become a seller" flow is on the roadmap.
 
 ## Roles
 
@@ -223,8 +223,8 @@ A black and white interface with cobalt blue (`#0047AB`) as the single accent co
 - [x] Cart with stock validation and unavailable item handling
 - [x] Seller product creation with image upload
 - [x] Publish and unpublish products
-- [ ] Seller product list with All, Listed and Unlisted tabs
-- [ ] Edit and delete products
+- [x] Seller product list with All, Listed and Unlisted tabs
+- [x] Edit and delete products
 - [ ] Checkout and orders
 - [ ] Self serve "Become a seller" flow
 - [ ] Debounced, optimistic quantity updates in the cart
