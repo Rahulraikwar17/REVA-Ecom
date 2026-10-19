@@ -1,8 +1,13 @@
-<div align="center">
-
 # REVA
 
+<div align="center">
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Visit_Website-2C3480?style=for-the-badge&logo=vercel&logoColor=white)](https://reva-ecom.vercel.app/)
+
+**[Visit REVA — Live Website](https://reva-ecom.vercel.app/)**
+
 **Everyday clothing at honest prices.**
+
 A full-stack e-commerce app for shoppers and sellers, built with the MERN stack.
 
 ![React](https://img.shields.io/badge/React-black?style=for-the-badge&logo=react&logoColor=61DAFB)
@@ -17,50 +22,56 @@ A full-stack e-commerce app for shoppers and sellers, built with the MERN stack.
 
 ## Overview
 
-REVA is a clothing store where customers browse products, pick a size and manage a cart, while sellers list and manage their own products from a dedicated panel. Access is role based: the seller tools only appear for seller accounts and are enforced on the server.
+REVA is a clothing store where customers browse products, pick a size and manage a cart, while sellers list and manage their own products from a dedicated panel. Access is role-based: seller tools only appear for seller accounts and are enforced on the server.
 
 ## Screenshots
 
 | Home | Products |
-| :---: | :---: |
+|:---:|:---:|
 | ![Home](docs/screenshots/home.png) | ![Products](docs/screenshots/products.png) |
 
-| Cart | Seller panel |
-| :---: | :---: |
-| ![Cart](docs/screenshots/cart.png) | ![Seller panel](docs/screenshots/seller.png) |
+| Cart | Seller Panel |
+|:---:|:---:|
+| ![Cart](docs/screenshots/cart.png) | ![Seller Panel](docs/screenshots/seller.png) |
 
 ## Features
 
-### For customers
+### For Customers
+
 - Register, log in and log out securely
 - Browse listed products with size and price
-- Cart with quantity controls, per item remove and a clear cart option
-- Stock aware cart: quantity can never go beyond the stock of the selected size
+- Cart with quantity controls, per-item removal and a clear cart option
+- Stock-aware cart: quantity cannot exceed the stock of the selected size
 - Unavailable items (deleted or unlisted products) are flagged in the cart and block checkout until removed
 - Order summary with a 20% sale discount and total savings
 - Loading skeletons, empty states and clear error messages
 
-### For sellers
+### For Sellers
+
 - Seller entry in the navbar with a dropdown (Add Product, All Products), visible only to seller accounts
-- Add product form with title, description, price, sizes with stock and up to 5 images
+- Add product form with title, description, price, sizes with stock and up to five images
 - Image upload to ImageKit with preview, type and size validation
 - List and unlist products with a single publish toggle
 - Seller product list showing stock per size, price and status
+- Edit and delete products
+- Manage listed and unlisted products
 
-## Tech stack
+## Tech Stack
 
 | Layer | Technology |
-| --- | --- |
+|---|---|
 | Frontend | React, React Router, Tailwind CSS, lucide-react |
-| State and data | Redux (current user), TanStack React Query (server data), React Hook Form |
-| HTTP | Axios |
+| State Management | Redux Toolkit |
+| Server State & Data Fetching | TanStack React Query |
+| Forms | React Hook Form |
+| HTTP Client | Axios |
 | Backend | Node.js, Express |
 | Database | MongoDB with Mongoose |
-| Auth | JWT access token, role based authorization (`user`, `seller`) |
+| Authentication | JWT access token, role-based authorization (`user`, `seller`) |
 | Validation | express-validator |
-| File upload | Multer and ImageKit |
+| File Upload | Multer and ImageKit |
 
-## Project structure
+## Project Structure
 
 ```text
 frontend/
@@ -70,35 +81,43 @@ frontend/
     ├── routes/               AppRoute, PublicRoute, PrivateRoute, SellerRoute
     ├── config/               Axios instance
     ├── features/
-    │   ├── auth/             api, hook, ui (Login, Register)
-    │   ├── cart/             api, hook, ui (CartPage, CartItem, EmptyCart, UnavailableItem)
-    │   └── product/          api, hook, ui (Products, AddProduct, SellerProducts)
+    │   ├── auth/              API, hooks, Login, Register
+    │   ├── cart/              API, hooks, CartPage, CartItem, EmptyCart, UnavailableItem
+    │   └── product/           API, hooks, Products, AddProduct, SellerProducts
     └── shared/
-        └── ui/               Home, About, Navbar, Footer, loaders
+        └── ui/                Home, About, Navbar, Footer, loaders
 
 backend/
-├── controllers/              auth, cart, product
-├── models/                   user, product, cart
+├── controllers/               auth, cart, product
+├── models/                    user, product, cart
 ├── routes/
-├── middlewares/              authenticate, authenticateSeller, upload
-└── validators/               express-validator chains
+├── middlewares/               authenticate, authenticateSeller, upload
+└── validators/                express-validator chains
+
+docs/
+└── screenshots/
+    ├── home.png
+    ├── products.png
+    ├── cart.png
+    └── seller.png
 ```
 
-## Getting started
+## Getting Started
 
 ### Prerequisites
+
 - Node.js 18 or newer
 - A MongoDB database (local or Atlas)
 - An ImageKit account for product images
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/your-username/reva.git
 cd reva
 ```
 
-### 2. Set up the backend
+### 2. Set Up the Backend
 
 ```bash
 cd backend
@@ -125,7 +144,9 @@ npm run dev
 
 The API runs at `http://localhost:3000/api`.
 
-### 3. Set up the frontend
+### 3. Set Up the Frontend
+
+Open another terminal:
 
 ```bash
 cd frontend
@@ -133,79 +154,98 @@ npm install
 npm run dev
 ```
 
-Make sure the Axios base URL in `src/config` points to `http://localhost:3000/api`.
+Make sure the Axios base URL in `src/config` points to:
 
-### 4. Create a seller account
+```text
+http://localhost:3000/api
+```
 
-Register a normal account, then change its `role` from `user` to `seller` in the `users` collection. The Seller menu appears after the next login or page refresh. A self serve "Become a seller" flow is on the roadmap.
+### 4. Create a Seller Account
+
+Register a normal account, then change its `role` from `user` to `seller` in the MongoDB `users` collection. Log in again or refresh the application to access seller features.
+
+A self-service "Become a Seller" flow is planned for a future release.
 
 ## Roles
 
 | Capability | Customer | Seller |
-| --- | :---: | :---: |
+|---|:---:|:---:|
 | Browse listed products | Yes | Yes |
 | Use the cart | Yes | Yes |
 | Add products | No | Yes |
+| Edit and delete products | No | Yes |
 | List or unlist products | No | Yes |
 | Access `/seller/*` pages | No | Yes |
 
 Role checks run on the server in the `authenticate` and `authenticateSeller` middlewares. Hiding the navbar entry is only a convenience, not the security layer.
 
-## API overview
+## API Overview
 
-All routes are prefixed with `/api` and require a logged in user unless noted.
+All routes are prefixed with `/api`. Protected routes require a logged-in user unless noted.
 
 ### Cart
 
 | Method | Endpoint | Body | Description |
-| --- | --- | --- | --- |
-| GET | `/cart` | | Get the cart with product details and `availableStock` per item |
-| POST | `/cart` | `{ productId, size, quantity }` | Add an item, or increase the quantity of the same product and size |
+|---|---|---|---|
+| GET | `/cart` | — | Get the cart with product details and `availableStock` per item |
+| POST | `/cart` | `{ productId, size, quantity }` | Add an item or increase the quantity of the same product and size |
 | PATCH | `/cart/:itemId` | `{ quantity }` | Set the final quantity of one cart item |
-| DELETE | `/cart/:itemId` | | Remove one cart item |
-| DELETE | `/cart` | | Remove all items |
+| DELETE | `/cart/:itemId` | — | Remove one cart item |
+| DELETE | `/cart` | — | Remove all items |
 
 ### Products
 
 | Method | Endpoint | Access | Description |
-| --- | --- | --- | --- |
+|---|---|---|---|
 | GET | `/products` | Customer | List published products |
-| POST | `/products` | Seller | Create a product (`multipart/form-data`) |
-| PATCH | `/products/listing/:id` | Seller | Publish or unpublish a product with `{ published: true \| false }` |
+| POST | `/products` | Seller | Create a product using `multipart/form-data` |
+| PATCH | `/products/listing/:id` | Seller | Publish or unpublish a product |
 
-Seller only endpoints also return all, listed and unlisted products for the seller panel.
+Seller-only endpoints also provide access to the seller's own products for management, including editing and deletion.
 
-Creating a product expects these form fields:
+### Product Creation Fields
 
 | Field | Format |
-| --- | --- |
-| `title` | text |
-| `description` | text |
-| `price` | JSON string, for example `{"amount":599,"currency":"INR"}` |
-| `sizes` | JSON string, for example `[{"size":"M","stock":50}]` |
+|---|---|
+| `title` | Text |
+| `description` | Text |
+| `price` | JSON string, e.g. `{"amount":599,"currency":"INR"}` |
+| `sizes` | JSON string, e.g. `[{"size":"M","stock":50}]` |
 | `published` | `true` or `false` |
-| `images` | up to 5 files (JPG, PNG or WebP) |
+| `images` | Up to five files (JPG, PNG or WebP) |
 
-## Data models
+## Data Models
+
+Simplified representation of the main product and cart models:
 
 ```js
 Product {
   title: String,
   description: String,
   images: [String],
-  price: { amount: Number, currency: "INR" },
-  sizes: [{ size: "XS" | "S" | "M" | "L" | "XL" | "XXL", stock: Number }],
+  price: {
+    amount: Number,
+    currency: "INR"
+  },
+  sizes: [{
+    size: "XS" | "S" | "M" | "L" | "XL" | "XXL",
+    stock: Number
+  }],
   seller: ObjectId,
   published: Boolean
 }
 
 Cart {
   user: ObjectId,
-  products: [{ product: ObjectId, quantity: Number, size: String }]
+  products: [{
+    product: ObjectId,
+    quantity: Number,
+    size: String
+  }]
 }
 ```
 
-## Business rules
+## Business Rules
 
 - A cart item is identified by its own `_id`. The same product in two sizes creates two items.
 - Adding a product that is already in the cart (same size) increases its quantity instead of duplicating it.
@@ -215,19 +255,25 @@ Cart {
 
 ## Design
 
-A black and white interface with cobalt blue (`#0047AB`) as the single accent color, subtle scroll and entrance animations, and support for reduced motion preferences.
+- Black-and-white interface with cobalt blue (`#0047AB`) as the accent color
+- Subtle scroll and entrance animations
+- Support for reduced-motion preferences
 
 ## Roadmap
 
-- [x] Authentication and role based access
-- [x] Cart with stock validation and unavailable item handling
-- [x] Seller product creation with image upload
+![Completed](https://img.shields.io/badge/Completed-7-2C3480?style=for-the-badge)
+![Remaining](https://img.shields.io/badge/Remaining-3-gray?style=for-the-badge)
+
+- [x] Authentication and role-based authorization
+- [x] Cart with stock validation
+- [x] Handling unavailable cart items
+- [x] Seller product creation with image uploads
 - [x] Publish and unpublish products
-- [x] Seller product list with All, Listed and Unlisted tabs
+- [x] Seller product list with All, Listed, and Unlisted tabs
 - [x] Edit and delete products
-- [ ] Checkout and orders
-- [ ] Self serve "Become a seller" flow
-- [ ] Debounced, optimistic quantity updates in the cart
+- [ ] Checkout and order management
+- [ ] Self-service seller registration
+- [ ] Debounced, optimistic cart quantity updates
 
 ## Contributing
 
