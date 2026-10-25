@@ -50,7 +50,7 @@ router.post(
   createProduct,
 );
 
-router.get("/", authenticate, allProductsController);
+router.get("/", allProductsController);
 router.get("/seller", authenticate, authenticateSeller, listAllProductToSeller);
 router.patch(
   "/unlist/:id",
