@@ -20,10 +20,11 @@ import FullScreenLoader from "../shared/ui/components/FullScreenLoader";
 import NotFoundPage from "../shared/ui/components/NotFoundPage";
 import ProductDetailPage from "../features/product/ui/pages/ProductDetailPage";
 
-// Created outside the component so it does not reset on re-render
+
 const router = createBrowserRouter([
-  // Public routes (login, register)
+
   {
+    
     element: <PublicRoute />,
     children: [
       {
@@ -46,7 +47,7 @@ const router = createBrowserRouter([
       },
     ],
   },
-  // Private routes (logged-in users)
+
   {
     path: "/",
     element: <PrivateRoute />,
@@ -61,7 +62,7 @@ const router = createBrowserRouter([
           { path: "products", element: <ProductPage /> },
           { path: "products/:id", element: <ProductDetailPage /> },
 
-          // Seller-only routes (inside the same layout, so the navbar stays)
+        
           {
             path: "seller/products",
             element: <SellerRoute />,
@@ -75,12 +76,12 @@ const router = createBrowserRouter([
     ],
   },
 
-  // Anything else
+
   { path: "*", element: <NotFoundPage /> },
 ]);
 
 const AppRoute = () => {
-  // On reload, restore the user from the token
+
   const { fetchingUser } = useCurrentUser();
 
   if (fetchingUser) return <FullScreenLoader />;
