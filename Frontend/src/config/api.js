@@ -7,19 +7,30 @@ const api = axios.create({
   withCredentials: true,
 });
 
-const SKIP_REFRESH_URLS = ["/auth/login", "/auth/register", "/auth/refresh"];
+const SKIP_REFRESH_URLS = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh",
+];
 
 let refreshPromise = null;
+
+const isAuthRequest = (url = "") =>
+  SKIP_REFRESH_URLS.some((endpoint) => url.includes(endpoint));
 
 const refreshAccessToken = () => {
   if (!refreshPromise) {
     refreshPromise = axios
-      .post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true })
+      .post(
+        `${BASE_URL}/auth/refresh`,
+        {},
+        { withCredentials: true }
+      )
       .then((response) => {
         const accessToken = response.data?.data?.accessToken;
 
         if (!accessToken) {
-          throw new Error("Access token is missing from the refresh response.");
+          throw new Error("Access token is missing from refresh response.");
         }
 
         localStorage.setItem("accessToken", accessToken);
@@ -34,16 +45,16 @@ const refreshAccessToken = () => {
   return refreshPromise;
 };
 
-const forceLogout = () => {
+const clearAccessToken = () => {
   localStorage.removeItem("accessToken");
-
-  if (window.location.pathname !== "/login") {
-    window.location.href = "/login";
-  }
 };
 
 api.interceptors.request.use(
   (config) => {
+    if (isAuthRequest(config.url)) {
+      return config;
+    }
+
     const accessToken = localStorage.getItem("accessToken");
 
     if (accessToken) {
@@ -53,11 +64,12 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
   (response) => response,
+
   async (error) => {
     const originalRequest = error.config;
 
@@ -67,37 +79,29 @@ api.interceptors.response.use(
 
     const isUnauthorized = error.response.status === 401;
 
-    const requestUrl = originalRequest.url || "";
-
-    const shouldSkipRefresh = SKIP_REFRESH_URLS.some((url) =>
-      requestUrl.includes(url),
-    );
-
-    if (!isUnauthorized || originalRequest._retry || shouldSkipRefresh) {
+    if (
+      !isUnauthorized ||
+      originalRequest._retry ||
+      isAuthRequest(originalRequest.url)
+    ) {
       return Promise.reject(error);
     }
 
     originalRequest._retry = true;
 
-    let newAccessToken;
-
     try {
-      newAccessToken = await refreshAccessToken();
+      const newAccessToken = await refreshAccessToken();
+
+      originalRequest.headers = originalRequest.headers || {};
+      originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+      return api(originalRequest);
     } catch (refreshError) {
-      const status = refreshError.response?.status;
+      clearAccessToken();
 
-      if (status === 401 || status === 403) {
-        forceLogout();
-      }
-
-      return Promise.reject(refreshError);
+      return Promise.reject(error);
     }
-
-    originalRequest.headers = originalRequest.headers || {};
-    originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-    return api(originalRequest);
-  },
+  }
 );
 
 export default api;

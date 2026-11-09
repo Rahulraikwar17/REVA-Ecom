@@ -1,4 +1,3 @@
-import React from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router";
 import useAuth from "../../hook/useAuth";
@@ -17,9 +16,19 @@ const LoginPage = () => {
     formState: { errors },
   } = useForm();
 
-  const onSubmit = (data) => {
-    loginUser({ ...data, email: data.email.trim().toLowerCase() });
-  };
+ const onSubmit = async (data) => {
+  try {
+    await loginUser({
+      ...data,
+      email: data.email.trim().toLowerCase(),
+    });
+  } catch (error) {
+    console.log("LOGIN ERROR:", error);
+    console.log("STATUS:", error.response?.status);
+    console.log("RESPONSE:", error.response?.data);
+  }
+};
+  console.log(loginError);
 
   return (
     <div>

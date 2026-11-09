@@ -1,90 +1,114 @@
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
+import React from "react";
+import {
+  createBrowserRouter,
+  Navigate,
+  RouterProvider,
+} from "react-router";
 
-import { useCurrentUser } from "../features/auth/hook/useAuth";
+import HomePage from "../shared/ui/pages/HomePage.jsx";
+import AboutPage from "../shared/ui/pages/AboutPage.jsx";
+import ProductPage from "../features/product/ui/pages/ProductPage.jsx";
+import ProductDetailPage from "../features/product/ui/pages/ProductDetailPage.jsx";
+import CartPage from "../features/cart/ui/pages/CartPage.jsx";
+
+import LoginPage from "../features/auth/ui/pages/LoginPage.jsx";
+import RegisterPage from "../features/auth/ui/pages/RegisterPage.jsx";
+
+import SellerProductPage from "../features/product/ui/pages/SellerProductPage.jsx";
+import AddProductPage from "../features/product/ui/pages/AddProductPage.jsx";
 
 import PublicRoute from "./PublicRoute";
 import PrivateRoute from "./PrivateRoute";
 import SellerRoute from "./SellerRoute";
 
-import AuthLayout from "../app/layouts/AuthLayout";
-import MainLayout from "../app/layouts/MainLayout";
-import Cartpage from "../features/cart/ui/pages/CartPage";
-import LoginPage from "../features/auth/ui/pages/LoginPage";
-import RegisterPage from "../features/auth/ui/pages/RegisterPage";
-import HomePage from "../shared/ui/pages/HomePage";
-import AboutPage from "../shared/ui/pages/AboutPage";
-import ProductPage from "../features/product/ui/pages/ProductPage";
-import AddProductPage from "../features/product/ui/pages/AddProductPage";
-import SellerProductPage from "../features/product/ui/pages/SellerProductPage";
-import FullScreenLoader from "../shared/ui/components/FullScreenLoader";
-import NotFoundPage from "../shared/ui/components/NotFoundPage";
-import ProductDetailPage from "../features/product/ui/pages/ProductDetailPage";
+import AuthLayout from "../app/layouts/AuthLayout.jsx";
+import MainLayout from "../app/layouts/MainLayout.jsx";
 
+import { useCurrentUser } from "../features/auth/hook/useAuth.jsx";
 
 const router = createBrowserRouter([
-
   {
-    
     element: <PublicRoute />,
     children: [
       {
-        path: "/",
         element: <AuthLayout />,
         children: [
           {
-            index: true,
-            element: <Navigate to="/login" replace />,
-          },
-          {
-            path: "login",
+            path: "/login",
             element: <LoginPage />,
           },
           {
-            path: "register",
+            path: "/register",
             element: <RegisterPage />,
           },
         ],
       },
     ],
   },
-
   {
     path: "/",
-    element: <PrivateRoute />,
+    element: <MainLayout />,
     children: [
       {
-        path: "",
-        element: <MainLayout />,
+        index: true,
+        element: <HomePage />,
+      },
+      {
+        path: "home",
+        element: <HomePage />,
+      },
+      {
+        path: "about",
+        element: <AboutPage />,
+      },
+      {
+        path: "products",
+        element: <ProductPage />,
+      },
+      {
+        path: "products/:id",
+        element: <ProductDetailPage />,
+      },
+      {
+        path: "cart",
+        element: <CartPage />,
+      },
+      {
+        element: <PrivateRoute />,
         children: [
-          { path: "home", element: <HomePage /> },
-          { path: "cart", element: <Cartpage /> },
-          { path: "about", element: <AboutPage /> },
-          { path: "products", element: <ProductPage /> },
-          { path: "products/:id", element: <ProductDetailPage /> },
-
-        
           {
-            path: "seller/products",
             element: <SellerRoute />,
             children: [
-              { path: "", element: <SellerProductPage /> },
-              { path: "new", element: <AddProductPage /> },
+              {
+                path: "seller/products",
+                element: <SellerProductPage />,
+              },
+              {
+                path: "seller/products/new",
+                element: <AddProductPage />,
+              },
             ],
           },
         ],
       },
     ],
   },
-
-
-  { path: "*", element: <NotFoundPage /> },
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
+  },
 ]);
 
 const AppRoute = () => {
-
   const { fetchingUser } = useCurrentUser();
 
-  if (fetchingUser) return <FullScreenLoader />;
+  if (fetchingUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-300 border-t-black" />
+      </div>
+    );
+  }
 
   return <RouterProvider router={router} />;
 };

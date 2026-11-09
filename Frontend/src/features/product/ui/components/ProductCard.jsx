@@ -17,13 +17,15 @@ const ProductCard = ({ product }) => {
 
   const mainImage = images[0];
   const hoverImage = images[1];
+
   const [imgFailed, setImgFailed] = useState(false);
   const [hoverFailed, setHoverFailed] = useState(false);
   const [selectedSize, setSelectedSize] = useState(null);
   const [message, setMessage] = useState("");
   const [added, setAdded] = useState(false);
 
-  const soldOut = sizes.length > 0 && sizes.every((s) => s.stock === 0);
+  const soldOut =
+    sizes.length > 0 && sizes.every((item) => item.stock === 0);
 
   const detailPath = `/products/${_id}`;
 
@@ -35,10 +37,22 @@ const ProductCard = ({ product }) => {
       return;
     }
 
+    if (soldOut) return;
+
     setMessage("");
 
+    const selectedSizeData = sizes.find(
+      (item) => item.size === selectedSize
+    );
+
     addToCart(
-      { productId: _id, size: selectedSize, quantity: 1 },
+      {
+        product,
+        productId: _id,
+        size: selectedSize,
+        quantity: 1,
+        availableStock: selectedSizeData?.stock,
+      },
       {
         onSuccess: () => {
           setAdded(true);
@@ -46,10 +60,11 @@ const ProductCard = ({ product }) => {
         },
         onError: (err) => {
           setMessage(
-            err.response?.data?.message || "Could not add to cart. Try again.",
+            err.response?.data?.message ||
+              "Could not add to cart. Try again."
           );
         },
-      },
+      }
     );
   };
 
@@ -61,7 +76,6 @@ const ProductCard = ({ product }) => {
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-lg border border-black/10 bg-white transition duration-300 hover:-translate-y-1 hover:border-black hover:shadow-xl">
-      {/* Image */}
       <Link
         to={detailPath}
         className="relative block aspect-[4/5] w-full overflow-hidden bg-neutral-100"
@@ -101,7 +115,6 @@ const ProductCard = ({ product }) => {
         )}
       </Link>
 
-      {/* Details */}
       <div className="flex flex-1 flex-col p-4">
         <h3 className="truncate text-sm font-semibold text-black">
           <Link to={detailPath} className="transition hover:text-[#0047AB]">
@@ -113,10 +126,12 @@ const ProductCard = ({ product }) => {
           {price ? formatPrice(price) : "-"}
         </p>
 
-        {/* Sizes */}
         {sizes.length > 0 && (
           <div className="mt-3">
-            <p className="mb-1.5 text-xs text-neutral-600">Select size</p>
+            <p className="mb-1.5 text-xs text-neutral-600">
+              Select size
+            </p>
+
             <div className="flex flex-wrap gap-1.5">
               {sizes.map(({ size, stock }) => {
                 const outOfStock = stock === 0;
@@ -151,7 +166,6 @@ const ProductCard = ({ product }) => {
           </p>
         )}
 
-        {/* Add to cart */}
         <div className="mt-auto pt-4">
           <button
             type="button"
@@ -167,11 +181,13 @@ const ProductCard = ({ product }) => {
           >
             {isAddingToCart ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Adding...
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Adding...
               </>
             ) : added ? (
               <>
-                <Check className="h-4 w-4" /> Added
+                <Check className="h-4 w-4" />
+                Added
               </>
             ) : (
               <>

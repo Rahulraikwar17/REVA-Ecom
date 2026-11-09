@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router";
-
 import { getUserApi, loginApi, logOutApi, registerApi } from "../api/auth.api";
 import { logOut, setCredentials } from "../state/AuthSlice";
 import { toast } from "react-toastify";
@@ -12,13 +11,15 @@ const useAuth = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const registerMutate = useMutation({
+  const registerMutation = useMutation({
     mutationFn: registerApi,
-    onSuccess: (data) => {
-      const { accessToken, user } = data.data;
+    onSuccess: (response) => {
+      const { accessToken, user } = response.data.data;
 
       localStorage.setItem("accessToken", accessToken);
       dispatch(setCredentials({ user, accessToken }));
+      queryClient.setQueryData(["currentUser"], response.data);
+
       toast.success("Account created successfully");
       navigate("/home");
     },
@@ -27,29 +28,44 @@ const useAuth = () => {
     },
   });
 
-  const loginMutate = useMutation({
+  const loginMutation = useMutation({
     mutationFn: loginApi,
     onSuccess: (data) => {
-      const { accessToken, user } = data.data;
+      const responseData = data?.data ?? data;
+
+      const accessToken = responseData?.accessToken;
+      const user = responseData?.user;
+
+      if (!accessToken || !user) {
+        console.error("Unexpected login response:", data);
+        toast.error("Invalid login response from server.");
+        return;
+      }
 
       localStorage.setItem("accessToken", accessToken);
+
       dispatch(setCredentials({ user, accessToken }));
-      toast.success("Logged in successfully");
+
+      toast.success("Login successful!");
+
       navigate("/home");
     },
     onError: (error) => {
-      toast.error(error?.response?.data?.message || "Login failed");
+      toast.error(
+        error?.response?.data?.message || "Invalid email or password",
+      );
     },
   });
 
-  const logOutMutation = useMutation({
+  const logoutMutation = useMutation({
     mutationFn: logOutApi,
     onSuccess: () => {
       localStorage.removeItem("accessToken");
       dispatch(logOut());
       queryClient.clear();
+
       toast.success("Logged out successfully");
-      navigate("/login");
+      navigate("/home");
     },
     onError: (error) => {
       toast.error(error?.response?.data?.message || "Logout failed");
@@ -57,17 +73,17 @@ const useAuth = () => {
   });
 
   return {
-    registerUser: registerMutate.mutate,
-    isRegistering: registerMutate.isPending,
-    registerError: registerMutate.error,
+    registerUser: registerMutation.mutate,
+    isRegistering: registerMutation.isPending,
+    registerError: registerMutation.error,
 
-    loginUser: loginMutate.mutate,
-    isLoggingIn: loginMutate.isPending,
-    loginError: loginMutate.error,
+    loginUser: loginMutation.mutate,
+    isLoggingIn: loginMutation.isPending,
+    loginError: loginMutation.error,
 
-    logOutUser: logOutMutation.mutate,
-    isLoggingOut: logOutMutation.isPending,
-    logOutError: logOutMutation.error,
+    logOutUser: logoutMutation.mutate,
+    isLoggingOut: logoutMutation.isPending,
+    logOutError: logoutMutation.error,
   };
 };
 
@@ -78,36 +94,41 @@ export const useCurrentUser = () => {
   const query = useQuery({
     queryKey: ["currentUser"],
     queryFn: getUserApi,
-    enabled: !!token,
+    enabled: Boolean(token),
+    retry: (count, error) => {
+      const status = error?.response?.status;
 
-    retry: (count, error) => !error?.response && count < 2,
+      if (status === 401 || status === 403) {
+        return false;
+      }
+
+      return count < 2;
+    },
   });
 
   useEffect(() => {
-    if (query.data) {
-      const { user } = query.data.data;
+    if (query.data?.data?.user) {
       dispatch(
         setCredentials({
-          user,
-          accessToken: localStorage.getItem("accessToken"),
+          user: query.data.data.user,
+          accessToken: token,
         }),
       );
     }
-  }, [query.data, dispatch]);
+  }, [query.data, dispatch, token]);
 
   useEffect(() => {
-    if (query.error) {
-      const status = query.error?.response?.status;
-      if (status === 401 || status === 403) {
-        localStorage.removeItem("accessToken");
-        dispatch(logOut());
-      }
+    const status = query.error?.response?.status;
+
+    if (status === 401 || status === 403) {
+      localStorage.removeItem("accessToken");
+      dispatch(logOut());
     }
   }, [query.error, dispatch]);
 
   return {
-    currentUser: query.data?.data?.user,
-    fetchingUser: query.isLoading,
+    currentUser: query.data?.data?.user ?? null,
+    fetchingUser: Boolean(token) && query.isLoading,
     currentUserError: query.error,
   };
 };

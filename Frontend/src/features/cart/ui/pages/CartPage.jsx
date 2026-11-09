@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { AlertCircle, BadgePercent, Loader2, Trash2 } from "lucide-react";
+import { Link } from "react-router";
+import { useSelector } from "react-redux";
+import {
+  AlertCircle,
+  BadgePercent,
+  Loader2,
+  Trash2,
+} from "lucide-react";
+
 import useCart from "../../hook/useCart";
 import CartItem from "../components/CartItem";
 import CartStyles from "../components/CartStyles";
@@ -7,18 +15,28 @@ import EmptyCart from "../components/EmptyCart";
 import UnavailableItem from "../components/UnavailableItem";
 
 const SALE_PERCENT = 20;
-const inr = (n) => `₹${n.toLocaleString("en-IN")}`;
+
+const inr = (number) =>
+  `₹${number.toLocaleString("en-IN")}`;
 
 const getErrorInfo = (error) => {
   const status = error?.response?.status;
   const message = error?.response?.data?.message ?? "";
 
   if (/stock/i.test(message)) {
-    return { type: "stock", text: "No more stock available for this size" };
+    return {
+      type: "stock",
+      text: "No more stock available for this size",
+    };
   }
+
   if (status === 404 && /product/i.test(message)) {
-    return { type: "unavailable", text: "This product is no longer available" };
+    return {
+      type: "unavailable",
+      text: "This product is no longer available",
+    };
   }
+
   return {
     type: "error",
     text: message || "Something went wrong. Please try again.",
@@ -31,12 +49,13 @@ const CartSkeleton = () => (
 
     <div className="grid items-start gap-6 lg:grid-cols-[1fr_380px]">
       <div className="space-y-4">
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2].map((item) => (
           <div
-            key={i}
+            key={item}
             className="flex gap-4 rounded-2xl border border-neutral-200 p-4 sm:gap-6 sm:p-5"
           >
             <div className="aspect-[4/5] w-24 animate-pulse rounded-xl bg-neutral-200 sm:w-32" />
+
             <div className="flex-1 space-y-3">
               <div className="h-5 w-2/3 animate-pulse rounded bg-neutral-200" />
               <div className="h-4 w-1/3 animate-pulse rounded bg-neutral-200" />
@@ -52,6 +71,10 @@ const CartSkeleton = () => (
 );
 
 const CartPage = () => {
+  const isAuthenticate = useSelector(
+    (state) => state.auth.isAuthenticate
+  );
+
   const {
     getCartItems,
     fetchingCartItems,
@@ -67,30 +90,38 @@ const CartPage = () => {
   const [itemErrors, setItemErrors] = useState({});
   const [confirmingClear, setConfirmingClear] = useState(false);
 
-  const clearItemError = (itemId) =>
-    setItemErrors((prev) => {
-      const next = { ...prev };
+  const clearItemError = (itemId) => {
+    setItemErrors((previous) => {
+      const next = { ...previous };
       delete next[itemId];
       return next;
     });
+  };
 
   const handleRemove = (itemId) => {
     setRemovingId(itemId);
+
     removeCartItem(itemId, {
       onError: () => setRemovingId(null),
+      onSettled: () => setRemovingId(null),
     });
   };
 
   const handleQuantityChange = (itemId, quantity) => {
     clearItemError(itemId);
     setUpdatingId(itemId);
+
     updateCartItem(
       { itemId, quantity },
       {
-        onError: (error) =>
-          setItemErrors((prev) => ({ ...prev, [itemId]: getErrorInfo(error) })),
+        onError: (error) => {
+          setItemErrors((previous) => ({
+            ...previous,
+            [itemId]: getErrorInfo(error),
+          }));
+        },
         onSettled: () => setUpdatingId(null),
-      },
+      }
     );
   };
 
@@ -113,17 +144,21 @@ const CartPage = () => {
     return (
       <>
         <CartStyles />
+
         <div className="cart-rise mx-auto flex max-w-md flex-col items-center px-4 py-24 text-center">
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600">
             <AlertCircle size={30} />
           </span>
+
           <h2 className="mt-6 text-2xl font-bold text-black">
             We could not load your cart
           </h2>
+
           <p className="mt-2 text-neutral-500">
             {fetchCartItemsError?.response?.data?.message ||
               "Check your connection and try again."}
           </p>
+
           <button
             onClick={() => window.location.reload()}
             className="mt-6 rounded-xl bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0047AB]"
@@ -135,7 +170,7 @@ const CartPage = () => {
     );
   }
 
-  const allItems = getCartItems?.data?.cart?.products ?? [];
+  const allItems = getCartItems ?? [];
 
   if (allItems.length === 0) {
     return (
@@ -147,16 +182,30 @@ const CartPage = () => {
   }
 
   const availableItems = allItems.filter(
-    (item) => item.product && !item.isUnavailable,
+    (item) => item.product && !item.isUnavailable
   );
+
   const hasUnavailable = availableItems.length !== allItems.length;
 
-  const totalQty = availableItems.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = availableItems.reduce(
-    (sum, item) => sum + (item.product.price?.amount ?? 0) * item.quantity,
-    0,
+  const totalQty = availableItems.reduce(
+    (sum, item) => sum + item.quantity,
+    0
   );
-  const discount = Math.round((subtotal * SALE_PERCENT) / 100);
+
+  const subtotal = availableItems.reduce(
+    (sum, item) =>
+      sum +
+      (item.product.price?.amount ??
+        item.product.price ??
+        0) *
+        item.quantity,
+    0
+  );
+
+  const discount = Math.round(
+    (subtotal * SALE_PERCENT) / 100
+  );
+
   const total = subtotal - discount;
 
   return (
@@ -176,6 +225,7 @@ const CartPage = () => {
             <span className="hidden text-sm text-neutral-600 sm:inline">
               Remove all items?
             </span>
+
             <button
               onClick={() => setConfirmingClear(false)}
               disabled={isClearingCart}
@@ -183,12 +233,15 @@ const CartPage = () => {
             >
               Cancel
             </button>
+
             <button
               onClick={handleClearCart}
               disabled={isClearingCart}
               className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
             >
-              {isClearingCart && <Loader2 size={14} className="animate-spin" />}
+              {isClearingCart && (
+                <Loader2 size={14} className="animate-spin" />
+              )}
               {isClearingCart ? "Clearing..." : "Yes, clear"}
             </button>
           </div>
@@ -202,6 +255,34 @@ const CartPage = () => {
           </button>
         )}
       </div>
+
+      {!isAuthenticate && (
+        <div className="cart-rise mb-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+          <h3 className="text-lg font-semibold text-black">
+            Your cart is saved on this device
+          </h3>
+
+          <p className="mt-1 text-sm text-neutral-600">
+            Sign in to sync your cart and continue with checkout.
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              to="/login"
+              className="rounded-lg bg-black px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0047AB]"
+            >
+              Sign in
+            </Link>
+
+            <Link
+              to="/register"
+              className="rounded-lg border border-black px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-neutral-100"
+            >
+              Sign up
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-4">
@@ -225,7 +306,7 @@ const CartPage = () => {
                 onRemove={handleRemove}
                 isRemoving={removingId === item._id}
               />
-            ),
+            )
           )}
         </div>
 
@@ -237,8 +318,13 @@ const CartPage = () => {
 
           <div className="mt-6 space-y-3 text-sm">
             <div className="flex justify-between text-neutral-400">
-              <span>Subtotal ({totalQty} {totalQty === 1 ? "item" : "items"})</span>
-              <span className="tabular-nums text-white">{inr(subtotal)}</span>
+              <span>
+                Subtotal ({totalQty} {totalQty === 1 ? "item" : "items"})
+              </span>
+
+              <span className="tabular-nums text-white">
+                {inr(subtotal)}
+              </span>
             </div>
 
             <div className="flex justify-between text-[#7CA8FF]">
@@ -246,7 +332,10 @@ const CartPage = () => {
                 <BadgePercent size={16} />
                 Sale discount ({SALE_PERCENT}%)
               </span>
-              <span className="tabular-nums">− {inr(discount)}</span>
+
+              <span className="tabular-nums">
+                − {inr(discount)}
+              </span>
             </div>
           </div>
 
@@ -254,6 +343,7 @@ const CartPage = () => {
 
           <div className="flex items-end justify-between">
             <span className="text-base text-neutral-300">Total</span>
+
             <span
               key={total}
               className="cart-pop text-3xl font-bold tabular-nums"
@@ -272,12 +362,27 @@ const CartPage = () => {
             </p>
           )}
 
-          <button
-            disabled={hasUnavailable}
-            className="mt-6 w-full rounded-xl bg-white py-3.5 text-base font-semibold text-black transition duration-200 hover:bg-[#0047AB] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-black"
-          >
-            Proceed to checkout
-          </button>
+          {!isAuthenticate && (
+            <p className="mt-4 text-center text-sm text-neutral-300">
+              Sign in to continue with checkout.
+            </p>
+          )}
+
+          {isAuthenticate ? (
+            <button
+              disabled={hasUnavailable}
+              className="mt-6 w-full rounded-xl bg-white py-3.5 text-base font-semibold text-black transition duration-200 hover:bg-[#0047AB] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-black"
+            >
+              Proceed to checkout
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="mt-6 block w-full rounded-xl bg-white py-3.5 text-center text-base font-semibold text-black transition duration-200 hover:bg-[#0047AB] hover:text-white"
+            >
+              Sign in to checkout
+            </Link>
+          )}
         </aside>
       </div>
     </div>

@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router";
+import { useSelector } from "react-redux";
+
 import useAuth from "../../../features/auth/hook/useAuth";
+import useCart from "../../../features/cart/hook/useCart";
 
 import {
   Home,
@@ -17,9 +20,6 @@ import {
   PlusCircle,
   List,
 } from "lucide-react";
-import { useSelector } from "react-redux";
-
-// Theme: cobalt blue (#0047AB), black, white
 
 const links = [
   { to: "/home", label: "Home", icon: Home },
@@ -28,30 +28,43 @@ const links = [
 ];
 
 const sellerLinks = [
-  { to: "/seller/products/new", label: "Add product", icon: PlusCircle },
-  { to: "/seller/products", label: "All products", icon: List },
+  {
+    to: "/seller/products/new",
+    label: "Add product",
+    icon: PlusCircle,
+  },
+  {
+    to: "/seller/products",
+    label: "All products",
+    icon: List,
+  },
 ];
 
-// Seller dropdown (desktop). Defined outside Navbar so it keeps its own state.
 const SellerMenu = () => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const { pathname } = useLocation();
+
   const isActive = pathname.startsWith("/seller");
 
-  // Close on outside click and on Escape
   useEffect(() => {
     if (!open) return;
 
-    const handleClick = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    const handleClick = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setOpen(false);
+      }
     };
-    const handleKey = (e) => {
-      if (e.key === "Escape") setOpen(false);
+
+    const handleKey = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClick);
     document.addEventListener("keydown", handleKey);
+
     return () => {
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("keydown", handleKey);
@@ -113,19 +126,27 @@ const Navbar = () => {
 
   const { logOutUser, isLoggingOut, logOutError } = useAuth();
 
-  // Adjust this selector to match your store shape
   const user = useSelector((state) => state.auth.user);
+  const isAuthenticate = useSelector(
+    (state) => state.auth.isAuthenticate
+  );
+
+  const { getCartItems = [] } = useCart();
+
   const isSeller = user?.role === "seller";
 
-  // Connect this to your cart state
-  const cartCount = 0;
+  const cartCount = getCartItems.reduce(
+    (total, item) => total + (item.quantity || 0),
+    0
+  );
 
   const handleLogout = () => {
     if (isLoggingOut) return;
+
+    setOpen(false);
     logOutUser();
   };
 
-  // Desktop link: underline marks the active page
   const desktopLinkClass = ({ isActive }) =>
     `flex items-center gap-2 border-b-2 px-3 py-5 text-sm font-medium transition ${
       isActive
@@ -133,7 +154,6 @@ const Navbar = () => {
         : "border-transparent text-black hover:text-[#0047AB]"
     }`;
 
-  // Mobile link: left bar marks the active page
   const mobileLinkClass = ({ isActive }) =>
     `flex items-center gap-3 rounded-md border-l-4 px-4 py-3 text-sm font-medium transition ${
       isActive
@@ -159,8 +179,11 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-black/10 bg-white">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo (public/logo.png) */}
-        <Link to="/home" aria-label="Go to home" className="flex items-center">
+        <Link
+          to="/home"
+          aria-label="Go to home"
+          className="flex items-center"
+        >
           <img
             src="/logo.png"
             alt="Logo"
@@ -168,7 +191,6 @@ const Navbar = () => {
           />
         </Link>
 
-        {/* Desktop links */}
         <ul className="hidden h-full items-center gap-2 md:flex">
           {links.map(({ to, label, icon: Icon }) => (
             <li key={to}>
@@ -183,14 +205,13 @@ const Navbar = () => {
             </li>
           ))}
 
-          {isSeller && (
+          {isAuthenticate && isSeller && (
             <li className="ml-3">
               <SellerMenu />
             </li>
           )}
         </ul>
 
-        {/* Desktop actions */}
         <div className="hidden items-center gap-3 md:flex">
           <Link
             to="/cart"
@@ -198,6 +219,7 @@ const Navbar = () => {
             className="relative flex h-10 w-10 items-center justify-center rounded-md border border-black/15 text-black transition hover:border-[#0047AB] hover:text-[#0047AB] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0047AB] focus-visible:ring-offset-2"
           >
             <ShoppingCart size={19} />
+
             {cartCount > 0 && (
               <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0047AB] px-1 text-[11px] font-semibold text-white">
                 {cartCount}
@@ -205,16 +227,33 @@ const Navbar = () => {
             )}
           </Link>
 
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className={`${logoutBtnBase} h-10 px-5`}
-          >
-            {logoutContent}
-          </button>
+          {isAuthenticate ? (
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className={`${logoutBtnBase} h-10 px-5`}
+            >
+              {logoutContent}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="rounded-md border border-black px-4 py-2.5 text-sm font-semibold text-black transition hover:border-[#0047AB] hover:text-[#0047AB]"
+              >
+                Sign in
+              </Link>
+
+              <Link
+                to="/register"
+                className="rounded-md bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0047AB]"
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
         </div>
 
-        {/* Mobile toggle */}
         <button
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
@@ -225,7 +264,6 @@ const Navbar = () => {
         </button>
       </nav>
 
-      {/* Logout error */}
       {logOutError && (
         <div className="border-t border-red-200 bg-red-50">
           <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2.5 text-sm text-red-600 sm:px-6 lg:px-8">
@@ -239,7 +277,6 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* Mobile menu */}
       {open && (
         <div className="border-t border-black/10 bg-white px-4 pb-5 pt-3 md:hidden">
           <ul className="space-y-1">
@@ -265,6 +302,7 @@ const Navbar = () => {
               >
                 <ShoppingCart size={18} />
                 Cart
+
                 {cartCount > 0 && (
                   <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0047AB] px-1.5 text-[11px] font-semibold text-white">
                     {cartCount}
@@ -273,11 +311,12 @@ const Navbar = () => {
               </NavLink>
             </li>
 
-            {isSeller && (
+            {isAuthenticate && isSeller && (
               <li className="pt-3">
                 <p className="px-4 pb-1 text-xs font-semibold text-[#0047AB]">
                   Seller
                 </p>
+
                 <ul className="space-y-1">
                   {sellerLinks.map(({ to, label, icon: Icon }) => (
                     <li key={to}>
@@ -297,13 +336,33 @@ const Navbar = () => {
             )}
           </ul>
 
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className={`${logoutBtnBase} mt-4 w-full py-3`}
-          >
-            {logoutContent}
-          </button>
+          {isAuthenticate ? (
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className={`${logoutBtnBase} mt-4 w-full py-3`}
+            >
+              {logoutContent}
+            </button>
+          ) : (
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <Link
+                to="/login"
+                onClick={() => setOpen(false)}
+                className="rounded-md border border-black py-3 text-center text-sm font-semibold text-black"
+              >
+                Sign in
+              </Link>
+
+              <Link
+                to="/register"
+                onClick={() => setOpen(false)}
+                className="rounded-md bg-black py-3 text-center text-sm font-semibold text-white"
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </header>
